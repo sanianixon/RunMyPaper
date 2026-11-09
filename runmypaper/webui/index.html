@@ -26,21 +26,16 @@
   --radius: 10px;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
+/* Follows the system setting. There is no in-page toggle, so no data-theme
+   override is needed. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root {
     --bg: #0f1115; --panel: #16191f; --ink: #e8ebf0; --ink-soft: #a0a9b8;
     --ink-faint: #727c8c; --line: #272c35; --line-soft: #1e232b;
     --accent: #7c8cff; --accent-soft: #1b1f33; --ok: #4ade80; --ok-soft: #12241a;
     --fail: #f87171; --fail-soft: #2a1718; --warn: #fbbf24; --warn-soft: #291f10;
     --code-bg: #0b0d11; --code-ink: #dfe4ec;
   }
-}
-:root[data-theme="dark"] {
-  --bg: #0f1115; --panel: #16191f; --ink: #e8ebf0; --ink-soft: #a0a9b8;
-  --ink-faint: #727c8c; --line: #272c35; --line-soft: #1e232b;
-  --accent: #7c8cff; --accent-soft: #1b1f33; --ok: #4ade80; --ok-soft: #12241a;
-  --fail: #f87171; --fail-soft: #2a1718; --warn: #fbbf24; --warn-soft: #291f10;
-  --code-bg: #0b0d11; --code-ink: #dfe4ec;
 }
 * { box-sizing: border-box; }
 body {
@@ -59,16 +54,7 @@ header { border-bottom: 1px solid var(--line); background: var(--panel); }
 h1 { margin: 0; font-size: 20px; letter-spacing: -0.2px; }
 h1 span { color: var(--accent); }
 .tagline { color: var(--ink-soft); font-size: 13.5px; }
-.spacer { flex: 1 1 auto; }
-.badge {
-  font: 500 11.5px/1 var(--mono); padding: 5px 9px; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent); border: 1px solid var(--line);
-  white-space: nowrap;
-}
-.attrib {
-  max-width: 1120px; margin: 0 auto; padding: 0 16px 14px;
-  color: var(--ink-faint); font-size: 12.5px;
-}
+.head-in { padding-bottom: 20px; }
 
 /* --- panels --- */
 .panel {
@@ -240,13 +226,6 @@ details.err pre { margin: 8px 0 0; background: var(--code-bg); color: var(--code
   <div class="head-in">
     <h1>Run<span>My</span>Paper</h1>
     <div class="tagline">A machine learning paper, turned into a project that runs &mdash; and proven to run.</div>
-    <div class="spacer"></div>
-    <div class="badge" id="provider">loading…</div>
-    <button class="ghost" id="theme" title="Toggle dark mode" style="padding:7px 11px">◐</button>
-  </div>
-  <div class="attrib">
-    Minor Project &middot; Sania Nixon (235811052) &middot; B.Tech Information Technology,
-    Manipal Institute of Technology Bengaluru &middot; Guide: Dr. Mangalampalli Surya Sudheer
   </div>
 </header>
 
@@ -368,12 +347,6 @@ const STAGES = ["ingest","extract","scaffold","generate","import","forward","ste
 const GATES = ["import","forward","step","train"];
 const MARK = { ok: "✓", fail: "✕", running: "•", pending: "", skipped: "–" };
 let timer = null, lastPayload = null;
-
-/* ---------- theme ---------- */
-$("theme").onclick = () => {
-  const dark = document.documentElement.getAttribute("data-theme") === "dark";
-  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
-};
 
 /* ---------- tabs ---------- */
 $("tabs").addEventListener("click", e => {
@@ -642,12 +615,10 @@ async function loadRuns() {
 (async function init() {
   try {
     const c = await (await fetch("/api/config")).json();
-    const s = c.provider || {};
-    $("provider").textContent = `${s.provider || "?"} · ${s.model || "no model"} · key ${s.api_key || "?"}`;
     PAPERS = c.papers || [];
     $("preset").innerHTML = '<option value="">—</option>' + PAPERS.map(p =>
       `<option value="${esc(p.name)}">${esc(p.name)} — ${esc(p.note || p.id)}</option>`).join("");
-  } catch (e) { $("provider").textContent = "provider unknown"; }
+  } catch (e) { /* the benchmark presets are a convenience; the page works without them */ }
   drawStrip([]); loadRuns(); drawGuard();
 })();
 </script>
