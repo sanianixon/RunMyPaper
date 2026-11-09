@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RunMyPaper</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #16181d;
+  --ink-soft: #5b6472;
+  --ink-faint: #8b95a5;
+  --line: #e2e6ec;
+  --line-soft: #eef1f5;
+  --accent: #3d5afe;
+  --accent-soft: #eef1ff;
+  --ok: #0f8a4d;
+  --ok-soft: #e6f6ec;
+  --fail: #c62828;
+  --fail-soft: #fdecec;
+  --warn: #a35a00;
+  --warn-soft: #fdf3e4;
+  --code-bg: #1d2027;
+  --code-ink: #e6e9ef;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --panel: #16191f; --ink: #e8ebf0; --ink-soft: #a0a9b8;
+    --ink-faint: #727c8c; --line: #272c35; --line-soft: #1e232b;
+    --accent: #7c8cff; --accent-soft: #1b1f33; --ok: #4ade80; --ok-soft: #12241a;
+    --fail: #f87171; --fail-soft: #2a1718; --warn: #fbbf24; --warn-soft: #291f10;
+    --code-bg: #0b0d11; --code-ink: #dfe4ec;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --panel: #16191f; --ink: #e8ebf0; --ink-soft: #a0a9b8;
+  --ink-faint: #727c8c; --line: #272c35; --line-soft: #1e232b;
+  --accent: #7c8cff; --accent-soft: #1b1f33; --ok: #4ade80; --ok-soft: #12241a;
+  --fail: #f87171; --fail-soft: #2a1718; --warn: #fbbf24; --warn-soft: #291f10;
+  --code-bg: #0b0d11; --code-ink: #dfe4ec;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px 72px; }
+
+/* --- header --- */
+header { border-bottom: 1px solid var(--line); background: var(--panel); }
+.head-in {
+  max-width: 1120px; margin: 0 auto; padding: 18px 16px;
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+}
+h1 { margin: 0; font-size: 20px; letter-spacing: -0.2px; }
+h1 span { color: var(--accent); }
+.tagline { color: var(--ink-soft); font-size: 13.5px; }
+.spacer { flex: 1 1 auto; }
+.badge {
+  font: 500 11.5px/1 var(--mono); padding: 5px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.attrib {
+  max-width: 1120px; margin: 0 auto; padding: 0 16px 14px;
+  color: var(--ink-faint); font-size: 12.5px;
+}
+
+/* --- panels --- */
+.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); margin-top: 20px;
+}
+.panel > h2 {
+  margin: 0; padding: 13px 16px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--ink-soft); border-bottom: 1px solid var(--line-soft);
+  font-weight: 600;
+}
+.panel > .body { padding: 16px; }
+
+/* --- controls --- */
+.controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 5px; font-weight: 500; }
+select, input[type=text] {
+  width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--ink); font: inherit; font-size: 14px;
+}
+button {
+  padding: 9px 16px; border-radius: 8px; border: 1px solid transparent;
+  background: var(--accent); color: #fff; font: inherit; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.opts { display: flex; gap: 18px; margin-top: 13px; font-size: 13px; color: var(--ink-soft); flex-wrap: wrap; }
+.opts label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+.note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-faint); }
+
+/* --- pipeline strip --- */
+.strip { display: flex; align-items: stretch; overflow-x: auto; gap: 0; padding: 4px 0; }
+.step {
+  flex: 1 1 0; min-width: 104px; text-align: center; padding: 12px 6px 11px;
+  border-top: 3px solid var(--line); position: relative;
+}
+.step .dot {
+  width: 22px; height: 22px; margin: 0 auto 7px; border-radius: 50%;
+  border: 2px solid var(--line); display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; color: var(--ink-faint); background: var(--panel);
+}
+.step .nm { font: 600 12px/1.3 var(--mono); color: var(--ink-soft); }
+.step .dt { font-size: 11px; color: var(--ink-faint); margin-top: 4px; min-height: 1em;
+  overflow-wrap: anywhere; }
+.step.ok     { border-top-color: var(--ok); }
+.step.ok .dot    { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.step.ok .nm     { color: var(--ok); }
+.step.fail   { border-top-color: var(--fail); }
+.step.fail .dot  { border-color: var(--fail); background: var(--fail-soft); color: var(--fail); }
+.step.fail .nm   { color: var(--fail); }
+.step.running { border-top-color: var(--accent); }
+.step.running .dot { border-color: var(--accent); background: var(--accent-soft); color: var(--accent);
+  animation: pulse 1.1s ease-in-out infinite; }
+.step.running .nm  { color: var(--accent); }
+.step.skipped .dot { border-style: dashed; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.14); opacity: .65 } }
+@media (prefers-reduced-motion: reduce) { .step.running .dot { animation: none } }
+
+.statusline {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+  font-size: 13px; color: var(--ink-soft);
+}
+.pill { font: 600 11.5px/1 var(--mono); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.pill.fail { background: var(--fail-soft); color: var(--fail); border-color: transparent; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+
+/* --- tabs --- */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 22px; overflow-x: auto; }
+.tab {
+  padding: 10px 14px; border: none; background: none; color: var(--ink-soft);
+  font: 600 13.5px/1 inherit; cursor: pointer; border-bottom: 2px solid transparent;
+  border-radius: 0; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.view { display: none; }
+.view.on { display: block; }
+
+/* --- spec rendering --- */
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.field {
+  border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; background: var(--bg);
+}
+.field .k { font: 600 11px/1 var(--mono); color: var(--ink-faint); text-transform: uppercase;
+  letter-spacing: .05em; }
+.field .v { font: 600 16px/1.3 var(--mono); margin-top: 5px; overflow-wrap: anywhere; }
+.field .v.none { color: var(--ink-faint); font-weight: 400; font-style: italic; font-size: 14px; }
+.field blockquote {
+  margin: 9px 0 0; padding-left: 9px; border-left: 2px solid var(--accent);
+  font-size: 12.5px; color: var(--ink-soft); font-style: italic;
+}
+.conf { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+.conf .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.conf .bar i { display: block; height: 100%; background: var(--ok); }
+.conf .n { font: 600 11px/1 var(--mono); color: var(--ink-faint); }
+
+ul.plain { margin: 0; padding-left: 18px; }
+ul.plain li { margin: 5px 0; font-size: 13.5px; }
+.empty { color: var(--ink-faint); font-style: italic; font-size: 13.5px; margin: 0; }
+
+/* --- architecture --- */
+.flow { display: flex; flex-direction: column; gap: 5px; }
+.lay {
+  display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: baseline;
+  padding: 8px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg);
+  font-size: 13px;
+}
+.lay .ln { font: 600 12px/1.3 var(--mono); color: var(--ink-soft); overflow-wrap: anywhere; }
+.lay .op { font: 600 13px/1.3 var(--mono); }
+.lay .ar { color: var(--ink-soft); font: 12.5px/1.4 var(--mono); }
+.blockbox {
+  border: 1px dashed var(--accent); border-radius: 8px; padding: 9px 10px;
+  background: var(--accent-soft);
+}
+.blockbox > .bh { font: 600 11.5px/1 var(--mono); color: var(--accent); margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: .05em; }
+.blockbox .flow { gap: 4px; }
+
+/* --- code --- */
+pre.code {
+  margin: 0; background: var(--code-bg); color: var(--code-ink); border-radius: 8px;
+  padding: 14px 14px 14px 0; overflow-x: auto; font: 12.5px/1.65 var(--mono);
+}
+pre.code .ln {
+  display: inline-block; width: 46px; padding-right: 14px; text-align: right;
+  color: #5b6472; user-select: none;
+}
+
+/* --- gates --- */
+.gaterow {
+  display: grid; grid-template-columns: 26px 110px 1fr; gap: 12px; align-items: center;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft);
+}
+.gaterow:last-child { border-bottom: none; }
+.gaterow .st { font-size: 16px; text-align: center; }
+.gaterow .nm { font: 600 13px/1 var(--mono); }
+.gaterow .out { font: 12px/1.5 var(--mono); color: var(--ink-soft); overflow-wrap: anywhere; }
+details.err { margin-top: 7px; }
+details.err summary { cursor: pointer; font-size: 12.5px; color: var(--fail); font-weight: 600; }
+details.err pre { margin: 8px 0 0; background: var(--code-bg); color: var(--code-ink);
+  padding: 11px; border-radius: 7px; overflow-x: auto; font: 12px/1.55 var(--mono); }
+
+/* --- schema guard --- */
+.guard { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 12px;
+  background: var(--bg); }
+.guard h3 { margin: 0 0 8px; font: 600 13px/1 var(--mono); }
+.guard .e { font-size: 13px; margin: 7px 0; }
+.guard .e code { font: 600 12px/1 var(--mono); color: var(--fail); }
+
+.log { font: 12px/1.6 var(--mono); color: var(--ink-soft); max-height: 190px; overflow-y: auto;
+  white-space: pre-wrap; margin: 0; }
+.err-banner {
+  margin-top: 14px; padding: 11px 13px; border-radius: 8px; background: var(--fail-soft);
+  color: var(--fail); font-size: 13.5px; border: 1px solid transparent;
+}
+@media (max-width: 620px) {
+  .controls { grid-template-columns: 1fr; }
+  .lay { grid-template-columns: 1fr; gap: 3px; }
+  .gaterow { grid-template-columns: 26px 1fr; }
+  .gaterow .out { grid-column: 2; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <h1>Run<span>My</span>Paper</h1>
+    <div class="tagline">A machine learning paper, turned into a project that runs &mdash; and proven to run.</div>
+    <div class="spacer"></div>
+    <div class="badge" id="provider">loading…</div>
+    <button class="ghost" id="theme" title="Toggle dark mode" style="padding:7px 11px">◐</button>
+  </div>
+  <div class="attrib">
+    Minor Project &middot; Sania Nixon (235811052) &middot; B.Tech Information Technology,
+    Manipal Institute of Technology Bengaluru &middot; Guide: Dr. Mangalampalli Surya Sudheer
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel">
+    <h2>Input</h2>
+    <div class="body">
+      <div class="controls">
+        <div>
+          <label for="paper">Paper &mdash; arXiv id, URL, or a local PDF path</label>
+          <input type="text" id="paper" value="1512.03385" spellcheck="false">
+        </div>
+        <div>
+          <label for="variant">Configuration to extract</label>
+          <input type="text" id="variant" value="ResNet-20, CIFAR-10" spellcheck="false">
+        </div>
+        <button id="run">Run pipeline</button>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="cache" checked> Use cached model calls</label>
+        <label><input type="checkbox" id="verify" checked> Run the verification gates</label>
+        <label for="preset" style="gap:8px">From the benchmark set:
+          <select id="preset" style="width:auto;min-width:210px"><option value="">—</option></select>
+        </label>
+        <label for="saved" style="gap:8px">Open a finished run:
+          <select id="saved" style="width:auto;min-width:160px"><option value="">—</option></select>
+        </label>
+      </div>
+      <p class="note" id="hint">
+        A fresh extraction asks the model for a full specification and takes a few minutes.
+        Re-running the same paper is instant: every model call is cached on disk.
+      </p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Pipeline</h2>
+    <div class="body">
+      <div class="strip" id="strip"></div>
+      <div class="statusline" id="status">
+        <span class="pill">idle</span>
+        <span>Pick a paper and press <strong>Run pipeline</strong>.</span>
+      </div>
+      <div id="errbox"></div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-v="spec" aria-selected="true">Specification</button>
+    <button class="tab" role="tab" data-v="arch" aria-selected="false">Architecture</button>
+    <button class="tab" role="tab" data-v="code" aria-selected="false">model.py</button>
+    <button class="tab" role="tab" data-v="gates" aria-selected="false">Gates</button>
+    <button class="tab" role="tab" data-v="guard" aria-selected="false">Schema guard</button>
+    <button class="tab" role="tab" data-v="log" aria-selected="false">Log</button>
+  </div>
+
+  <div class="view on" id="v-spec">
+    <section class="panel"><h2>What the paper states</h2><div class="body" id="specbody">
+      <p class="empty">No specification yet.</p>
+    </div></section>
+    <section class="panel"><h2>What the paper never says</h2><div class="body">
+      <div class="grid2">
+        <div>
+          <label>Unresolved fields</label>
+          <div id="unresolved"><p class="empty">—</p></div>
+        </div>
+        <div>
+          <label>Defaults applied instead</label>
+          <div id="assumptions"><p class="empty">—</p></div>
+        </div>
+      </div>
+      <p class="note">Recording these separately is the point: a number the paper never
+      printed is an assumption, not a result, and the generated project says so in its README.</p>
+    </div></section>
+  </div>
+
+  <div class="view" id="v-arch">
+    <section class="panel"><h2>Forward graph</h2><div class="body" id="archbody">
+      <p class="empty">No architecture yet.</p>
+    </div></section>
+  </div>
+
+  <div class="view" id="v-code">
+    <section class="panel"><h2>Generated model.py</h2><div class="body" id="codebody">
+      <p class="empty">Nothing generated yet.</p>
+    </div></section>
+  </div>
+
+  <div class="view" id="v-gates">
+    <section class="panel"><h2>Verification gates</h2><div class="body" id="gatesbody">
+      <p class="empty">Gates have not run.</p>
+    </div></section>
+  </div>
+
+  <div class="view" id="v-guard">
+    <section class="panel"><h2>Schema guard</h2><div class="body">
+      <p class="note" style="margin-top:0">Every specification on disk, checked against the schema.
+      A spec that contradicts itself &mdash; a block the graph references but never declares, or a
+      classifier wider than the layers feeding it &mdash; is rejected before any code is generated.</p>
+      <div id="guardbody"><p class="empty">Checking…</p></div>
+      <button class="ghost" id="recheck" style="margin-top:4px">Re-check</button>
+    </div></section>
+  </div>
+
+  <div class="view" id="v-log">
+    <section class="panel"><h2>Run log</h2><div class="body">
+      <pre class="log" id="logbody">—</pre>
+    </div></section>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const STAGES = ["ingest","extract","scaffold","generate","import","forward","step","train"];
+const GATES = ["import","forward","step","train"];
+const MARK = { ok: "✓", fail: "✕", running: "•", pending: "", skipped: "–" };
+let timer = null, lastPayload = null;
+
+/* ---------- theme ---------- */
+$("theme").onclick = () => {
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+};
+
+/* ---------- tabs ---------- */
+$("tabs").addEventListener("click", e => {
+  const btn = e.target.closest(".tab");
+  if (!btn) return;
+  for (const t of document.querySelectorAll(".tab"))
+    t.setAttribute("aria-selected", String(t === btn));
+  for (const v of document.querySelectorAll(".view"))
+    v.classList.toggle("on", v.id === "v-" + btn.dataset.v);
+});
+
+/* ---------- pipeline strip ---------- */
+function drawStrip(stages) {
+  const by = {};
+  (stages || []).forEach(s => by[s.name] = s);
+  $("strip").innerHTML = STAGES.map(name => {
+    const s = by[name] || { state: "pending", detail: "" };
+    return `<div class="step ${s.state}">
+      <div class="dot">${MARK[s.state] || ""}</div>
+      <div class="nm">${esc(name)}</div>
+      <div class="dt">${esc((s.detail || "").slice(0, 90))}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- specification ---------- */
+const FIELDS = [
+  ["architecture.family", "family"],
+  ["dataset.name", "dataset"],
+  ["dataset.task", "task"],
+  ["dataset.source", "data source"],
+  ["dataset.num_classes", "classes"],
+  ["architecture.input_shape", "input shape"],
+  ["architecture.output_dim", "output units"],
+  ["training.optimizer", "optimizer"],
+  ["training.lr", "learning rate"],
+  ["training.lr_schedule", "lr schedule"],
+  ["training.momentum", "momentum"],
+  ["training.weight_decay", "weight decay"],
+  ["training.batch_size", "batch size"],
+  ["training.epochs", "epochs"],
+  ["training.loss", "loss"],
+];
+const dig = (o, p) => p.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+
+function drawSpec(spec) {
+  if (!spec) { $("specbody").innerHTML = '<p class="empty">No specification yet.</p>'; return; }
+  const ev = {};
+  (spec.evidence || []).forEach(e => { if (!ev[e.field]) ev[e.field] = e; });
+
+  const cards = FIELDS.map(([path, label]) => {
+    const v = dig(spec, path);
+    const shown = (v === null || v === undefined || v === "")
+      ? '<div class="v none">not stated</div>'
+      : `<div class="v">${esc(Array.isArray(v) ? v.join(" × ") : v)}</div>`;
+    const e = ev[path];
+    const quote = e ? `<blockquote>“${esc(e.quote)}”</blockquote>
+      <div class="conf"><div class="bar"><i style="width:${Math.round(e.confidence*100)}%"></i></div>
+      <span class="n">${e.confidence.toFixed(2)}</span></div>` : "";
+    return `<div class="field"><div class="k">${esc(label)}</div>${shown}${quote}</div>`;
+  }).join("");
+
+  const results = (spec.reported || []).length
+    ? `<h3 style="font-size:13px;color:var(--ink-soft);margin:22px 0 10px;
+         text-transform:uppercase;letter-spacing:.06em">Numbers the paper reports</h3>
+       <div class="grid2">` + spec.reported.map(r =>
+        `<div class="field"><div class="k">${esc(r.metric)} · ${esc(r.split)}</div>
+         <div class="v">${esc(r.value)}</div></div>`).join("") + "</div>"
+    : "";
+
+  $("specbody").innerHTML =
+    `<h3 style="margin:0 0 12px;font-size:17px">${esc(spec.title || "")}</h3>
+     <div class="grid2">${cards}</div>${results}`;
+
+  const list = (arr, el) => $(el).innerHTML = (arr && arr.length)
+    ? `<ul class="plain">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`
+    : '<p class="empty">nothing &mdash; the paper stated every field</p>';
+  list(spec.unresolved, "unresolved");
+  list(spec.assumptions, "assumptions");
+}
+
+/* ---------- architecture ---------- */
+function argStr(args) {
+  return (args || []).map(a => `${a.key}=${a.value}`).join(", ");
+}
+function layerRow(l) {
+  return `<div class="lay"><div class="ln">${esc(l.name)}</div>
+    <div><span class="op">${esc(l.op)}</span>
+    ${l.args && l.args.length ? `<div class="ar">${esc(argStr(l.args))}</div>` : ""}
+    ${l.inputs && l.inputs.length ? `<div class="ar">← ${esc(l.inputs.join(", "))}</div>` : ""}
+    </div></div>`;
+}
+function drawArch(spec) {
+  if (!spec || !spec.architecture) {
+    $("archbody").innerHTML = '<p class="empty">No architecture yet.</p>'; return;
+  }
+  const a = spec.architecture;
+  const blocks = {};
+  (a.blocks || []).forEach(b => blocks[b.name] = b);
+
+  const rows = (a.graph || []).map(l => {
+    const ref = l.op.startsWith("Block:") ? blocks[l.op.slice(6)] : null;
+    if (!ref) return layerRow(l);
+    return `<div class="blockbox"><div class="bh">${esc(l.name)} — ${esc(ref.name)}</div>
+      <div class="flow">${ref.layers.map(layerRow).join("")}</div></div>`;
+  }).join("");
+
+  const shape = (a.input_shape || []).join(" × ");
+  $("archbody").innerHTML =
+    `<div class="statusline" style="margin:0 0 14px;padding:0 0 14px">
+       <span class="pill">${esc(a.family || "?")}</span>
+       <span>input <strong>${esc(shape)}</strong></span>
+       <span>→ <strong>${esc(a.output_dim ?? "?")}</strong> outputs</span>
+       <span>${(a.graph || []).length} top-level layers, ${(a.blocks || []).length} block type(s)</span>
+     </div>
+     <div class="flow">${rows || '<p class="empty">empty graph</p>'}</div>`;
+}
+
+/* ---------- code ---------- */
+function drawCode(src) {
+  if (!src) { $("codebody").innerHTML = '<p class="empty">Nothing generated yet.</p>'; return; }
+  const body = src.split("\n").map((l, i) =>
+    `<span class="ln">${i + 1}</span>${esc(l)}`).join("\n");
+  $("codebody").innerHTML = `<pre class="code">${body}</pre>`;
+}
+
+/* ---------- gates ---------- */
+function drawGates(p) {
+  const by = {};
+  (p.stages || []).forEach(s => by[s.name] = s);
+  $("gatesbody").innerHTML = GATES.map(g => {
+    const s = by[g] || { state: "pending", detail: "" };
+    const colour = s.state === "ok" ? "var(--ok)" : s.state === "fail" ? "var(--fail)" : "var(--ink-faint)";
+    const err = p.gate_output && p.gate_output[g]
+      ? `<details class="err"><summary>show the error the repair loop was given</summary>
+         <pre>${esc(p.gate_output[g])}</pre></details>` : "";
+    return `<div class="gaterow">
+      <div class="st" style="color:${colour}">${MARK[s.state] || "·"}</div>
+      <div class="nm">${esc(g)}</div>
+      <div class="out">${esc(s.detail || s.state)}${err}</div>
+    </div>`;
+  }).join("") + (p.repairs
+    ? `<p class="note">${p.repairs} repair pass${p.repairs > 1 ? "es" : ""} applied.
+       The failing gate's output is fed back to the model, which rewrites model.py.</p>`
+    : "");
+}
+
+/* ---------- schema guard ---------- */
+async function drawGuard() {
+  $("guardbody").innerHTML = '<p class="empty">Checking…</p>';
+  try {
+    const r = await (await fetch("/api/validate")).json();
+    const specs = r.specs || [];
+    if (!specs.length) { $("guardbody").innerHTML = '<p class="empty">No spec files on disk yet.</p>'; return; }
+    $("guardbody").innerHTML = specs.map(s => `<div class="guard">
+      <h3>${esc(s.file)}
+        <span class="pill ${s.errors.length ? "fail" : "ok"}" style="margin-left:8px">
+        ${s.errors.length ? s.errors.length + " problem" + (s.errors.length > 1 ? "s" : "") : "valid"}</span>
+      </h3>
+      ${s.errors.map(e => `<div class="e"><code>${esc(e.field)}</code> — ${esc(e.message)}</div>`).join("")
+        || '<p class="empty" style="margin:0">Accepted: the graph is self-consistent and every enum is in range.</p>'}
+    </div>`).join("");
+  } catch (e) {
+    $("guardbody").innerHTML = `<p class="empty">could not check: ${esc(e.message)}</p>`;
+  }
+}
+$("recheck").onclick = drawGuard;
+
+/* ---------- status ---------- */
+function drawStatus(p) {
+  const done = p.done, bad = !!p.error;
+  const gatesOk = GATES.every(g => (p.stages || []).find(s => s.name === g)?.state === "ok");
+  let pill, text;
+  if (bad) { pill = '<span class="pill fail">failed</span>'; text = esc(p.error); }
+  else if (!done) {
+    pill = '<span class="pill warn">running</span>';
+    const cur = (p.stages || []).find(s => s.state === "running");
+    text = cur ? esc(cur.detail || cur.name) : "working…";
+  } else if (gatesOk) {
+    pill = '<span class="pill ok">all gates passed</span>';
+    text = `The generated project imports, runs a forward pass, takes a training step and trains.`;
+  } else {
+    pill = '<span class="pill warn">incomplete</span>';
+    text = "The pipeline finished but not every gate passed — see the Gates tab.";
+  }
+  const extra = [];
+  if (p.repairs) extra.push(`<span>${p.repairs} repair${p.repairs > 1 ? "s" : ""}</span>`);
+  if (p.name) extra.push(`<span>out/${esc(p.name)}/</span>`);
+  $("status").innerHTML = pill + `<span>${text}</span>` + extra.join("");
+  $("errbox").innerHTML = bad ? `<div class="err-banner">${esc(p.error)}</div>` : "";
+}
+
+/* ---------- render ---------- */
+function render(p) {
+  lastPayload = p;
+  drawStrip(p.stages); drawStatus(p);
+  drawSpec(p.spec); drawArch(p.spec); drawCode(p.model_py); drawGates(p);
+  $("logbody").textContent = (p.log || []).join("\n") || "—";
+}
+
+/* ---------- running ---------- */
+function setBusy(b) {
+  $("run").disabled = b;
+  $("run").textContent = b ? "Running…" : "Run pipeline";
+}
+async function poll(id) {
+  try {
+    const p = await (await fetch("/api/jobs/" + id)).json();
+    render(p);
+    if (p.done) { clearInterval(timer); timer = null; setBusy(false); drawGuard(); loadRuns(); }
+  } catch (e) { /* keep polling; the server may be mid-gate */ }
+}
+$("run").onclick = async () => {
+  setBusy(true);
+  $("errbox").innerHTML = "";
+  try {
+    const r = await fetch("/api/jobs", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paper: $("paper").value.trim(),
+        variant: $("variant").value.trim(),
+        use_cache: $("cache").checked,
+        verify: $("verify").checked,
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "could not start");
+    clearInterval(timer);
+    timer = setInterval(() => poll(j.id), 1200);
+    poll(j.id);
+  } catch (e) {
+    setBusy(false);
+    $("errbox").innerHTML = `<div class="err-banner">${esc(e.message)}</div>`;
+  }
+};
+
+/* ---------- presets and saved runs ---------- */
+let PAPERS = [];
+$("preset").onchange = e => {
+  const p = PAPERS.find(x => x.name === e.target.value);
+  if (!p) return;
+  $("paper").value = p.id;
+  $("variant").value = p.note || "";
+};
+$("saved").onchange = async e => {
+  const name = e.target.value;
+  if (!name) return;
+  try {
+    const p = await (await fetch("/api/runs/" + encodeURIComponent(name))).json();
+    if (p.error) throw new Error(p.error);
+    render(p);
+  } catch (err) {
+    $("errbox").innerHTML = `<div class="err-banner">${esc(err.message)}</div>`;
+  }
+};
+async function loadRuns() {
+  try {
+    const r = await (await fetch("/api/runs")).json();
+    const sel = $("saved"), keep = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + (r.runs || []).map(x =>
+      `<option value="${esc(x.name)}">${esc(x.name)} (${x.gates.length}/4 gates)</option>`).join("");
+    sel.value = keep;
+  } catch (e) {}
+}
+
+(async function init() {
+  try {
+    const c = await (await fetch("/api/config")).json();
+    const s = c.provider || {};
+    $("provider").textContent = `${s.provider || "?"} · ${s.model || "no model"} · key ${s.api_key || "?"}`;
+    PAPERS = c.papers || [];
+    $("preset").innerHTML = '<option value="">—</option>' + PAPERS.map(p =>
+      `<option value="${esc(p.name)}">${esc(p.name)} — ${esc(p.note || p.id)}</option>`).join("");
+  } catch (e) { $("provider").textContent = "provider unknown"; }
+  drawStrip([]); loadRuns(); drawGuard();
+})();
+</script>
+</body>
+</html>

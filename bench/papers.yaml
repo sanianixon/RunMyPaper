@@ -1,0 +1,18 @@
+# The benchmark set. Fixed before any measurement, so results cannot be
+# cherry-picked. Every entry must have a public reference implementation and a
+# hand-labelled gold spec in bench/gold/<name>.json before it is scored.
+- {name: resnet,        id: "1512.03385", note: "ResNet-20, CIFAR-10"}
+- {name: vgg,           id: "1409.1556",  note: "VGG-16, ImageNet"}
+- {name: transformer,   id: "1706.03762", note: "Transformer encoder"}
+- {name: vit,           id: "2010.11929", note: "ViT-B/16"}
+- {name: densenet,      id: "1608.06993", note: "DenseNet-BC, CIFAR-10"}
+- {name: mobilenetv2,   id: "1801.04381", note: "MobileNetV2"}
+- {name: squeezenet,    id: "1602.07360", note: "SqueezeNet"}
+- {name: wideresnet,    id: "1605.07146", note: "WRN-28-10, CIFAR-10"}
+- {name: googlenet,     id: "1409.4842",  note: "GoogLeNet / Inception v1"}
+- {name: batchnorm,     id: "1502.03167", note: "Inception + BatchNorm"}
+- {name: unet,          id: "1505.04597", note: "U-Net segmentation"}
+- {name: resnext,       id: "1611.05431", note: "ResNeXt-50 32x4d"}
+- {name: shufflenet,    id: "1707.01083", note: "ShuffleNet"}
+- {name: efficientnet,  id: "1905.11946", note: "EfficientNet-B0"}
+- {name: highway,       id: "1505.00387", note: "Highway networks"}
